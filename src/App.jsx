@@ -4,11 +4,13 @@ import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import StudentDashboard from './pages/Dashboard/StudentDashboard';
 import AdminDashboard from './pages/Dashboard/AdminDashboard';
+import CreateActivityPage from './pages/Admin/CreateActivityPage';  // ← Novo
 import SyllableFormationActivity from './pages/Activities/SyllableFormationActivity';
 import StudentProgressPage from './pages/Progress/StudentProgressPage';
 import AlphabetExplorer from './pages/Activities/AlphabetExplorer';
 import Header from './components/common/Header';
 import { useAuth } from './context/AuthContext';
+
 function App() {
   const { user, isAuthenticated, loading } = useAuth();
   const userRole = user?.role || 'student';
@@ -42,6 +44,7 @@ function App() {
           path="/dashboard"
           element={userRole === 'student' ? <StudentDashboard /> : <AdminDashboard />}
         />
+        <Route path="/create-activity" element={userRole === 'admin' ? <CreateActivityPage /> : <Navigate to="/dashboard" />} />  // ← Novo: Protegido
         <Route path="/activity/syllable-formation" element={<SyllableFormationActivity />} />
         <Route path="/activity/alphabet-explorer" element={<AlphabetExplorer />} />
         <Route path="/progress" element={<StudentProgressPage />} />
