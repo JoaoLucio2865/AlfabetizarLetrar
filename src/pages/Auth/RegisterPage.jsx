@@ -1,110 +1,95 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
-import { Link, useNavigate } from 'react-router-dom';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
-
-const AuthContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 80px);
-  background-color: var(--background-color);
-`;
-
-const AuthBox = styled.div`
-  background-color: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-`;
-
-const Title = styled.h2`
-  margin-bottom: 1.5rem;
-  color: var(--primary-color);
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-`;
-
-const ErrorMessage = styled.p`
-  color: var(--error-color);
-  margin-top: -0.5rem;
-  margin-bottom: 1rem;
-`;
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; 
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { register } = useAuth(); 
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (password !== confirmPassword) {
-      setError('As senhas não coincidem.');
+    if (!name.trim()) {
+      setError('Digite um nome.');
       return;
     }
+    setLoading(true);
+    setError('');
 
-    // Simulação de registro
-    console.log('Dados de registro:', { name, email, password });
-    // Em um app real, você faria uma requisição axios para o backend
-    // para registrar o usuário.
-    alert('Cadastro realizado com sucesso! Faça login para continuar.');
-    navigate('/login');
+    const result = await register(name.trim());
+    if (result.success) {
+      alert(`Bem-vindo, ${result.user.name}! Você foi cadastrado com sucesso.`); 
+      navigate('/dashboard');
+    } else {
+      setError(result.error);
+    }
+    setLoading(false);
   };
 
+  const suggestions = ['Pedro', 'Ana', 'Lucas', 'Sofia', 'Professor João'];
+
   return (
-    <AuthContainer>
-      <AuthBox>
-        <Title>Cadastro</Title>
-        <Form onSubmit={handleSubmit}>
-          <Input
-            type="text"
-            placeholder="Nome Completo"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <Input
-            type="email"
-            placeholder="E-mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Confirmar Senha"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          {error && <ErrorMessage>{error}</ErrorMessage>}
-          <Button type="submit">Cadastrar</Button>
-        </Form>
-        <p style={{ marginTop: '1rem' }}>
-          Já tem uma conta? <Link to="/login">Entrar</Link>
-        </p>
-      </AuthBox>
-    </AuthContainer>
+    <div style={{ 
+      maxWidth: '400px', 
+      margin: '50px auto', 
+      padding: '30px', 
+      border: '1px solid #ddd', 
+      borderRadius: '10px', 
+      textAlign: 'center',
+      fontSize: '18px'
+    }}>
+      <h1 style={{ color: '#28a745', marginBottom: '30px' }}>Cadastre-se!</h1>
+      <p>Digite seu nome para se cadastrar:</p>
+      
+      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Ex.: Pedro ou Ana"
+          autoComplete="off"
+          list="name-suggestions"
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            fontSize: '20px', 
+            border: '2px solid #ddd', 
+            borderRadius: '5px', 
+            marginBottom: '15px',
+            textAlign: 'center'
+          }}
+          disabled={loading}
+        />
+        <datalist id="name-suggestions">
+          {suggestions.map((sug, index) => <option key={index} value={sug} />)}
+        </datalist>
+
+        {error && <p style={{ color: 'red', marginBottom: '15px' }}>{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading || !name.trim()}
+          style={{
+            width: '100%',
+            padding: '15px',
+            background: '#28a745',
+            color: 'white',
+            fontSize: '18px',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: loading ? 'not-allowed' : 'pointer'
+          }}
+        >
+          {loading ? 'Cadastrando...' : 'Cadastrar'}
+        </button>
+      </form>
+
+      <Link to="/login" style={{ color: '#007bff', textDecoration: 'none' }}>
+        Já tem nome cadastrado? Faça login aqui.
+      </Link>
+    </div>
   );
 };
 

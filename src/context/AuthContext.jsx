@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-////import api from '../services/api';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
@@ -27,19 +26,6 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username) => {
     try {
-      const response = await api.get(`/auth/login-by-name/${encodeURIComponent(username)}`);
-      const userData = response.data;
-
-      if (userData) {
-        setUser (userData);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return { success: true };
-      } else {
-        return { success: false, error: 'Nome de usuário não encontrado.' };
-      }
-    } catch (error) {
-      console.error('Erro no login:', error);
       const mockUsers = {
         'joão': { id: 1, name: 'João', role: 'student' },
         'maria': { id: 2, name: 'Maria', role: 'student' },
@@ -53,6 +39,28 @@ export const AuthProvider = ({ children }) => {
         return { success: true };
       }
       return { success: false, error: 'Nome não encontrado. Tente novamente ou peça ajuda.' };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      return { success: false, error: 'Erro no login.' };
+    }
+  };
+
+  const register = async (name) => {
+    try {
+      const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '{}');
+      const newId = Object.keys(mockUsers).length + 1;
+      const newUser  = { id: newId, name: name.trim(), role: 'student' };
+      
+      mockUsers[name.toLowerCase()] = newUser ;
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+
+      setUser (newUser );
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(newUser ));
+      return { success: true, user: newUser  };
+    } catch (error) {
+      console.error('Erro no cadastro:', error);
+      return { success: false, error: 'Erro ao cadastrar. Tente novamente.' };
     }
   };
 
@@ -67,6 +75,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     loading,
     login,
+    register,
     logout
   };
 
