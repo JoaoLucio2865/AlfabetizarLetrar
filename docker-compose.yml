@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alfabetizacao-frontend
+    ports:
+      - "5173:5173" # Mapeia a porta 5173 do host para a porta 5173 do contêiner
+    volumes:
+      - .:/app # Monta o diretório atual do seu projeto no diretório /app do contêiner
+      - /app/node_modules # Garante que node_modules dentro do contêiner não seja sobrescrito pelo volume do host
+    environment:
+      # Variáveis de ambiente que você pode precisar para o Vite ou sua aplicação
+      # Exemplo: VITE_API_URL: http://localhost:3000
+      NODE_ENV: development
+    # Opcional: Se você quiser que o contêiner reinicie automaticamente em caso de falha
+    restart: unless-stopped
