@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';  // ← Novo: Import do context (ajuste caminho)
 import ProgressOverview from '../../components/dashboard/ProgressOverview';
 import ActivityList from '../../components/dashboard/ActivityList';
 
@@ -50,8 +51,8 @@ const CallToAction = styled.div`
 `;
 
 const StudentDashboard = () => {
-  // Dados simulados
-  const studentName = "Maria Silva";
+  const { user } = useAuth();
+  const studentName = user?.name || 'Aluno';
   const progressData = {
     syllables: 75,
     words: 60,
@@ -60,7 +61,12 @@ const StudentDashboard = () => {
   const recentActivities = [
     { id: 1, name: "Formação de Sílabas - Nível 1", status: "Concluído", score: "85%" },
     { id: 2, name: "Leitura de Palavras Simples", status: "Em Andamento", score: "50%" },
+    { id: 3, name: "Formação de Palavras - CASA", status: "Pendente", score: "0%" },  // Exemplo nova atividade
   ];
+
+  if (!user) {
+    return <div>Carregando... ou faça login novamente.</div>;
+  }
 
   return (
     <DashboardContainer>
@@ -77,7 +83,11 @@ const StudentDashboard = () => {
       </Section>
 
       <CallToAction>
-        <Link to="/activity/syllable-formation">Começar Nova Atividade</Link>
+        <Link to="/upcoming-activities">Ver Atividades Próximas</Link>  {/* Atualizado: Para lista de atividades */}
+        <br />
+        <Link to="/activity/syllable-formation" style={{ marginTop: '1rem', display: 'inline-block' }}>
+          Começar Atividade de Sílabas
+        </Link>
       </CallToAction>
     </DashboardContainer>
   );

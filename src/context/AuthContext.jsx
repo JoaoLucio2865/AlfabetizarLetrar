@@ -29,19 +29,37 @@ export const AuthProvider = ({ children }) => {
       const mockUsers = {
         'joão': { id: 1, name: 'João', role: 'student' },
         'maria': { id: 2, name: 'Maria', role: 'student' },
-        'professora': { id: 3, name: 'Professora Ana', role: 'admin' }
+        'pedro': { id: 5, name: 'Pedro', role: 'student' },
+        'professora': { id: 3, name: 'Professora Ana', role: 'admin' },
+        'professor': { id: 4, name: 'Professor João', role: 'admin' },
+        'ana': { id: 6, name: 'Ana Silva', role: 'admin' }
       };
-      if (mockUsers[username.toLowerCase()]) {
-        const userData = mockUsers[username.toLowerCase()];
+
+      const lowerUsername = username.toLowerCase().trim();
+
+      if (mockUsers[lowerUsername]) {
+        const userData = mockUsers[lowerUsername];
         setUser (userData);
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(userData));
+        console.log('Debug - Login sucesso para:', userData);  // ← Temporário
         return { success: true };
       }
-      return { success: false, error: 'Nome não encontrado. Tente novamente ou peça ajuda.' };
+
+      const foundUser  = Object.values(mockUsers).find(u => 
+        u.name.toLowerCase().includes(lowerUsername) || lowerUsername.includes('prof')
+      );
+      if (foundUser ) {
+        setUser (foundUser );
+        setIsAuthenticated(true);
+        localStorage.setItem('user', JSON.stringify(foundUser ));
+        console.log('Debug - Login aproximado para:', foundUser );  // ← Temporário
+        return { success: true };
+      }
+      return { success: false, error: 'Nome não encontrado. Tente "professora", "professor" ou "joão". Peça ajuda.' };
     } catch (error) {
       console.error('Erro no login:', error);
-      return { success: false, error: 'Erro no login.' };
+      return { success: false, error: 'Erro no login. Tente novamente.' };
     }
   };
 
@@ -51,7 +69,7 @@ export const AuthProvider = ({ children }) => {
       const newId = Object.keys(mockUsers).length + 1;
       const newUser  = { id: newId, name: name.trim(), role: 'student' };
       
-      mockUsers[name.toLowerCase()] = newUser ;
+      mockUsers[name.toLowerCase().trim()] = newUser ;
       localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
 
       setUser (newUser );
