@@ -8,7 +8,7 @@ import SyllableFormationActivity from './pages/Activities/SyllableFormationActiv
 import StudentProgressPage from './pages/Progress/StudentProgressPage';
 import AlphabetExplorer from './pages/Activities/AlphabetExplorer';
 import Header from './components/common/Header';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from './context/AuthContext';
 function App() {
   const { user, isAuthenticated, loading } = useAuth();
   const userRole = user?.role || 'student';
