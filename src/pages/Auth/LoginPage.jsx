@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';  // Ajuste caminho se necessário
-import api from '../../services/api';  // Para config de baseURL se precisar
+//import api from '../../services/api';  // Para config de baseURL se precisar
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
