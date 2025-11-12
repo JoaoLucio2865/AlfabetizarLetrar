@@ -1,169 +1,126 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../../context/AuthContext';  // Ajuste caminho
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import Button from '../../components/common/Button';
+import api from '../../services/api';
 
 const Container = styled.div`
   padding: 2rem;
-  max-width: 800px;
+  max-width: 600px;
   margin: 0 auto;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 `;
 
-const FormGroup = styled.div`
-  margin-bottom: 1.5rem;
-`;
-
-const Label = styled.label`
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: bold;
+const Title = styled.h1`
   color: var(--primary-color);
+  margin-bottom: 2rem;
+  text-align: center;
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 `;
 
 const Input = styled.input`
-  width: 100%;
-  padding: 0.8rem;
+  padding: 0.5rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: 1rem;
 `;
 
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 0.8rem;
+const Textarea = styled.textarea`
+  padding: 0.5rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: 1rem;
   min-height: 100px;
 `;
 
-const Button = styled.button`
-  padding: 1rem 2rem;
-  background: var(--secondary-color);
-  color: white;
-  border: none;
+const Select = styled.select`
+  padding: 0.5rem;
+  border: 1px solid #ddd;
   border-radius: 5px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  margin-right: 1rem;
-  &:hover { background: #ffb300; }
-  &:disabled { background: #ccc; cursor: not-allowed; }
+  font-size: 1rem;
 `;
 
-const Preview = styled.div`
-  margin-top: 2rem;
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: #f9f9f9;
+const ErrorMessage = styled.p`
+  color: red;
+  font-size: 0.9rem;
 `;
 
 const CreateActivityPage = () => {
-  const { user } = useAuth();
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/dashboard" />;
-  }
-
-  const [title, setTitle] = useState('');
-  const [type, setType] = useState('syllables');  // 'syllables' ou 'words'
-  const [items, setItems] = useState('');  // Ex.: "CA,SA,A" para CASA
-  const [level, setLevel] = useState('easy');
+  const [formData, setFormData] = useState({
+    title: '',
+    type: 'syllables',
+    items: '',
+    level: 'easy'
+  });
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !items) {
-      alert('Preencha título e itens!');
-      return;
-    }
-
     setLoading(true);
+    setError('');
+
     try {
-      // Mock: Salva em localStorage (integre API depois)
-      const activities = JSON.parse(localStorage.getItem('activities') || '[]');
-      const newActivity = {
-        id: Date.now(),
-        title,
-        type,
-        items: items.split(',').map(i => i.trim()),  // Ex.: ['CA', 'SA', 'A']
-        level,
-        createdBy: user.name,
-        createdAt: new Date().toISOString()
-      };
-      activities.push(newActivity);
-      localStorage.setItem('activities', JSON.stringify(activities));
-
-      alert(`Atividade "${title}" criada com sucesso!`);
-      // Limpa form ou redireciona
-      setTitle(''); setItems(''); setType('syllables'); setLevel('easy');
-    } catch (error) {
-      alert('Erro ao criar atividade.');
+      const itemsArray = formData.items.split(',').map(item => item.trim().toUpperCase());
+      const payload = { ...formData, items: itemsArray };
+      await api.post('/activities', payload);
+      alert('Atividade criada com sucesso!');
+      navigate('/admin-dashboard');  // Redireciona para dashboard admin
+    } catch (err) {
+      setError('Erro ao criar atividade. Verifique os dados.');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
-
-  const previewItems = items ? items.split(',').map(i => i.trim()).join(' + ') : 'Ex.: CA,SA,A';
 
   return (
     <Container>
-      <h1 style={{ textAlign: 'center', color: 'var(--primary-color)' }}>Criar Nova Atividade</h1>
-      <form onSubmit={handleSubmit}>
-        <FormGroup>
-          <Label>Título da Atividade</Label>
-          <Input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Ex.: Formar a palavra CASA"
-          />
-        </FormGroup>
-
-        <FormGroup>
-          <Label>Tipo</Label>
-          <select value={type} onChange={(e) => setType(e.target.value)} style={{ width: '100%', padding: '0.8rem' }}>
-            <option value="syllables">Formação de Sílabas</option>
-            <option value="words">Formação de Palavras</option>
-          </select>
-        </FormGroup>
-
-        <FormGroup>
-          <Label>Itens Arrastáveis (separados por vírgula)</Label>
-          <Input
-            type="text"
-            value={items}
-            onChange={(e) => setItems(e.target.value)}
-            placeholder="Ex.: CA,SA,A (para CASA)"
-          />
-          <small>Preview: {previewItems} = {previewItems.replace(/,/g, '')}</small>
-        </FormGroup>
-
-        <FormGroup>
-          <Label>Nível de Dificuldade</Label>
-          <select value={level} onChange={(e) => setLevel(e.target.value)} style={{ width: '100%', padding: '0.8rem' }}>
-            <option value="easy">Fácil</option>
-            <option value="medium">Médio</option>
-            <option value="hard">Difícil</option>
-          </select>
-        </FormGroup>
-
-        <div style={{ textAlign: 'center' }}>
-          <Button type="submit" disabled={loading || !title || !items}>
-            {loading ? 'Criando...' : 'Criar Atividade'}
-          </Button>
-          <Button type="button" onClick={() => window.history.back()}>Cancelar</Button>
-        </div>
-      </form>
-
-      <Preview>
-        <h3>Preview da Atividade</h3>
-        <p><strong>Título:</strong> {title || 'Não definido'}</p>
-        <p><strong>Tipo:</strong> {type === 'syllables' ? 'Sílabas' : 'Palavras'}</p>
-        <p><strong>Itens:</strong> Arraste {previewItems} para formar a palavra.</p>
-        <p><strong>Nível:</strong> {level}</p>
-      </Preview>
+      <Title>Criar Nova Atividade</Title>
+      <Form onSubmit={handleSubmit}>
+        <Input
+          type="text"
+          name="title"
+          placeholder="Título da Atividade"
+          value={formData.title}
+          onChange={handleChange}
+          required
+        />
+        <Select name="type" value={formData.type} onChange={handleChange}>
+          <option value="syllables">Sílabas</option>
+          <option value="words">Palavras</option>
+          <option value="phrases">Frases</option>
+        </Select>
+        <Textarea
+          name="items"
+          placeholder="Itens separados por vírgula (ex.: CA, SA, A)"
+          value={formData.items}
+          onChange={handleChange}
+          required
+        />
+        <Select name="level" value={formData.level} onChange={handleChange}>
+          <option value="easy">Fácil</option>
+          <option value="medium">Médio</option>
+          <option value="hard">Difícil</option>
+        </Select>
+        {error && <ErrorMessage>{error}</ErrorMessage>}
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Criando...' : 'Criar Atividade'}
+        </Button>
+      </Form>
     </Container>
   );
 };

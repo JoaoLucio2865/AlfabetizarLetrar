@@ -1,31 +1,41 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';  // Ajuste caminho se necessário
-//import api from '../../services/api';  // Para config de baseURL se precisar
+import { Link } from 'react-router-dom';  // Removido useNavigate, pois redirecionamento é no contexto
+import { useAuth } from '../../context/AuthContext';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
+
+  // Função para síntese de voz (para acessibilidade)
+  const speak = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'pt-BR';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username.trim()) {
       setError('Digite seu nome.');
+      speak('Digite seu nome.');
       return;
     }
     setLoading(true);
     setError('');
 
-    const result = await login(username.trim());
-    if (result.success) {
-      navigate('/dashboard');  // Redireciona após login
-    } else {
-      setError(result.error);
+    try {
+      await login(username.trim());  // Chama login do contexto (redireciona automaticamente)
+      speak(`Bem-vindo, ${username.trim()}!`);  // Feedback de voz
+    } catch (err) {
+      setError('Erro no login. Verifique sua conexão.');
+      speak('Erro no login.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const suggestions = ['João', 'Maria', 'Pedro', 'Professora Ana', 'Aluno Teste'];
@@ -62,7 +72,6 @@ const LoginPage = () => {
           }}
           disabled={loading}
         />
-        {/* Lista de sugestões (datalist para input) */}
         <datalist id="username-suggestions">
           {suggestions.map((sug, index) => <option key={index} value={sug} />)}
         </datalist>
