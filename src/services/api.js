@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://backend-alfabetizacao.squareweb.app/public/api',  // URL do backend
+  baseURL: 'https://backend-alfabetizacao.squareweb.app/api',  // URL do backend
   headers: {
     'Content-Type': 'application/json',
   },
