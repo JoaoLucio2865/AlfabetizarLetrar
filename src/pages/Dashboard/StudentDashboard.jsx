@@ -137,17 +137,18 @@ const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Função para mapear tipo de atividade para rota
+  // Função para mapear tipo de atividade para rota (ajustado para rotas funcionais)
   const getActivityLink = (type) => {
     switch (type) {
       case 'syllables':
         return '/activity/syllable-formation';
       case 'words':
-        return '/activity/word-reading';  // Ou '/activity/word-writing' se preferir
+        return '/activity/word-reading';  // Assumindo que você crie WordReadingActivity.jsx
       case 'phrases':
-        return '/activity/phrase-formation';  // Crie se necessário
+        return '/activity/phrase-formation';  // Assumindo que você crie PhraseFormationActivity.jsx
       default:
-        return '#';  // Placeholder
+        speak('Atividade em desenvolvimento. Tente outra.');
+        return '#';  // Placeholder com feedback
     }
   };
 
@@ -197,18 +198,21 @@ const StudentDashboard = () => {
     }
   };
 
-  // Novo: Função para submeter para correção
+  // Novo: Função para submeter para correção (incluindo texto montado do localStorage)
   const submitForReview = async () => {
-    if (!selectedActivityId || !submission.trim()) {
+    const formedText = localStorage.getItem('formedText') || '';  // Pega texto montado da atividade
+    const fullSubmission = `${submission}\n\nTexto montado: ${formedText}`.trim();
+    if (!selectedActivityId || !fullSubmission.trim()) {
       alert('Selecione uma atividade e descreva o que fez.');
       return;
     }
     try {
-      await api.post('/progress', { activity_id: selectedActivityId, score: 0, submission });
+      await api.post('/progress', { activity_id: selectedActivityId, score: 0, submission: fullSubmission });
       alert('Submetido para correção!');
       speak('Submissão enviada para o professor.');
       setSubmission('');  // Limpa o campo
       setSelectedActivityId('');  // Limpa seleção
+      localStorage.removeItem('formedText');  // Limpa o texto montado
       fetchDashboardData();  // Recarrega dados
     } catch (err) {
       alert('Erro ao submeter.');
@@ -275,7 +279,7 @@ const StudentDashboard = () => {
       {/* Novo: Seção para submeter para correção */}
       <Section>
         <SectionTitle>Submeter para Correção</SectionTitle>
-        <p>Selecione uma atividade e descreva o que fez para o professor corrigir.</p>
+        <p>Selecione uma atividade e descreva o que fez para o professor corrigir. O texto montado será incluído automaticamente.</p>
         <Select value={selectedActivityId} onChange={(e) => setSelectedActivityId(e.target.value)}>
           <option value="">Selecione uma atividade</option>
           {availableActivities.map(activity => (

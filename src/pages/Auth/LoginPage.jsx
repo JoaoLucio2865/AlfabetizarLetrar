@@ -1,105 +1,122 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';  // Removido useNavigate, pois redirecionamento é no contexto
-import { useAuth } from '../../context/AuthContext';
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+
+const LoginContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: var(--background-color);
+`;
+
+const LoginForm = styled.form`
+  background-color: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+`;
+
+const Input = styled.input`
+  width: 100%;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+`;
+
+const Button = styled.button`
+  width: 100%;
+  padding: 0.75rem;
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
 
 const LoginPage = () => {
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState('');  // Novo: Campo para nome
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);  // Para mostrar campo senha apenas para admin
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
-  // Função para síntese de voz (para acessibilidade)
-  const speak = (text) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'pt-BR';
-      window.speechSynthesis.speak(utterance);
+  // Função para verificar role ao digitar nome
+  const checkRole = async (name) => {
+    if (!name) return;
+    try {
+      const response = await api.get(`/users/check-role?name=${name}`);  // Busca por name
+      if (response.data.role === 'admin') {
+        setShowPassword(true);  // Mostra campo senha para admin
+      } else {
+        setShowPassword(false);  // Esconde para alunos
+      }
+    } catch (err) {
+      setShowPassword(false);  // Fallback: trata como aluno
     }
+  };
+
+  const handleNameChange = (e) => {
+    setName(e.target.value);
+    checkRole(e.target.value);  // Verifica role ao digitar
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!username.trim()) {
-      setError('Digite seu nome.');
-      speak('Digite seu nome.');
-      return;
-    }
     setLoading(true);
-    setError('');
-
     try {
-      await login(username.trim());  // Chama login do contexto (redireciona automaticamente)
-      speak(`Bem-vindo, ${username.trim()}!`);  // Feedback de voz
+      if (showPassword) {
+        // Login com senha para admin
+        await login({ name, password });  // Ajuste AuthContext para usar name
+      } else {
+        // Login direto para alunos (sem senha)
+        await login({ name, password: '' });  // Ajuste no AuthContext se necessário
+      }
+      navigate('/dashboard');  // Redireciona para dashboard
     } catch (err) {
-      setError('Erro no login. Verifique sua conexão.');
-      speak('Erro no login.');
+      alert('Erro no login. Verifique credenciais.');
     } finally {
       setLoading(false);
     }
   };
 
-  const suggestions = ['João', 'Maria', 'Pedro', 'Professora Ana', 'Aluno Teste'];
-
   return (
-    <div style={{ 
-      maxWidth: '400px', 
-      margin: '50px auto', 
-      padding: '30px', 
-      border: '1px solid #ddd', 
-      borderRadius: '10px', 
-      textAlign: 'center',
-      fontSize: '18px'
-    }}>
-      <h1 style={{ color: '#007bff', marginBottom: '30px' }}>Bem-vindo!</h1>
-      <p>Digite seu nome para entrar:</p>
-      
-      <form onSubmit={handleSubmit} style={{ marginBottom: '20px' }}>
-        <input
+    <LoginContainer>
+      <LoginForm onSubmit={handleSubmit}>
+        <h2>Login</h2>
+        <Input
           type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Ex.: João ou Professora Maria"
-          autoComplete="off"
-          list="username-suggestions"
-          style={{ 
-            width: '100%', 
-            padding: '15px', 
-            fontSize: '20px', 
-            border: '2px solid #ddd', 
-            borderRadius: '5px', 
-            marginBottom: '15px',
-            textAlign: 'center'
-          }}
-          disabled={loading}
+          placeholder="Nome de Usuário"
+          value={name}
+          onChange={handleNameChange}
+          required
         />
-        <datalist id="username-suggestions">
-          {suggestions.map((sug, index) => <option key={index} value={sug} />)}
-        </datalist>
-
-        {error && <p style={{ color: 'red', marginBottom: '15px' }}>{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading || !username.trim()}
-          style={{
-            width: '100%',
-            padding: '15px',
-            background: '#28a745',
-            color: 'white',
-            fontSize: '18px',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
-        >
+        {showPassword && (
+          <Input
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        )}
+        <Button type="submit" disabled={loading}>
           {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
-
-      <Link to="/register" style={{ color: '#007bff', textDecoration: 'none' }}>
-        Ainda não tem nome cadastrado? Cadastre-se aqui.
-      </Link>
-    </div>
+        </Button>
+      </LoginForm>
+    </LoginContainer>
   );
 };
 

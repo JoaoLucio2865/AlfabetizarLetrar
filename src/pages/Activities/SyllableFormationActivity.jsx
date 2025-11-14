@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { DndProvider, useDrop } from 'react-dnd';  // Adicionado useDrop
+import { DndProvider, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Howl } from 'howler'; // Para áudio
+import { Howl } from 'howler';
 import DraggableLetter from '../../components/activities/DraggableLetter';
 import DropTargetArea from '../../components/activities/DropTargetArea';
 import OperatorButton from '../../components/activities/OperatorButton';
 import WordDisplay from '../../components/activities/WordDisplay';
 import Button from '../../components/common/Button';
-import api from '../../services/api';  // Novo: Para integração com backend
+import api from '../../services/api';
+import { useSearchParams } from 'react-router-dom';  // Novo: Para pegar ID da URL
 
 // Função auxiliar para síntese de voz
 const speak = (text) => {
@@ -24,8 +25,9 @@ const EnhancedDropTargetArea = ({ onDropLetter, children, letterStyle }) => {
   const [{ isOver }, drop] = useDrop({
     accept: 'letter',
     drop: (item) => {
+      console.log('Dropped letter:', item.letter);  // Debug: Log para verificar drop
       onDropLetter(item.letter);
-      speak(`Letra ${item.letter} adicionada.`);  // Feedback auditivo
+      speak(`Letra ${item.letter} adicionada.`);
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
@@ -144,12 +146,15 @@ const ReloadButton = styled.button`
 `;
 
 const SyllableFormationActivity = () => {
-  const [activity, setActivity] = useState(null);  // Dados da atividade do backend
+  const [searchParams] = useSearchParams();  // Novo: Para pegar ID da URL
+  const activityId = searchParams.get('id');  // Ex.: /activity/syllable-formation?id=1
+
+  const [activity, setActivity] = useState(null);
   const [availableLetters, setAvailableLetters] = useState([]);
   const [droppedLetters, setDroppedLetters] = useState([]);
   const [currentWord, setCurrentWord] = useState('');
   const [feedback, setFeedback] = useState(null);
-  const [letterStyle, setLetterStyle] = useState('uppercase');  // Novo: Para estilos
+  const [letterStyle, setLetterStyle] = useState('uppercase');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -164,17 +169,32 @@ const SyllableFormationActivity = () => {
     if (sound) sound.play();
   };
 
-  // Buscar atividade do backend
+  // Buscar atividade do backend (ajustado para ID específico ou primeira de sílabas)
   const fetchActivity = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/activities?type=syllables');  // Busca atividades de sílabas
-      const activityData = response.data[0];  // Pega a primeira (ajuste se necessário)
-      if (activityData) {
-        setActivity(activityData);
-        setAvailableLetters(activityData.items);  // Ex.: ['C', 'A', 'S', 'A']
-        speak(`Atividade carregada: ${activityData.title}`);
+      let response;
+      if (activityId) {
+        response = await api.get(`/activities/${activityId}`);  // Busca por ID
+        const activityData = response.data;
+        if (activityData && activityData.type === 'syllables') {
+          setActivity(activityData);
+          setAvailableLetters(activityData.items);
+          speak(`Atividade carregada: ${activityData.title}`);
+        } else {
+          setError('Atividade não encontrada ou não é de sílabas.');
+        }
+      } else {
+        response = await api.get('/activities?type=syllables');  // Busca primeira de sílabas
+        const activityData = response.data[0];
+        if (activityData) {
+          setActivity(activityData);
+          setAvailableLetters(activityData.items);
+          speak(`Atividade carregada: ${activityData.title}`);
+        } else {
+          setError('Nenhuma atividade de sílabas encontrada.');
+        }
       }
     } catch (err) {
       console.error('Erro ao buscar atividade:', err);
@@ -185,7 +205,7 @@ const SyllableFormationActivity = () => {
     }
   };
 
-  // Salvar progresso no backend (agora com submissão)
+  // Salvar progresso no backend
   const saveProgress = async (score, submission = '') => {
     try {
       await api.post('/progress', { activity_id: activity.id, score, submission });
@@ -196,7 +216,8 @@ const SyllableFormationActivity = () => {
   };
 
   const handleDropLetter = (letter) => {
-    if (!droppedLetters.includes(letter)) {  // Evita duplicatas
+    console.log('Handling drop for letter:', letter);  // Debug: Log para verificar
+    if (!droppedLetters.includes(letter)) {
       setDroppedLetters((prev) => [...prev, letter]);
       setAvailableLetters((prev) => prev.filter((l) => l !== letter));
     }
@@ -207,18 +228,21 @@ const SyllableFormationActivity = () => {
       const formedWord = droppedLetters.join('');
       setCurrentWord(formedWord);
       speak(formedWord);
+      localStorage.setItem('formedText', formedWord);
       setFeedback(null);
     } else if (operator === '-') {
       setAvailableLetters((prev) => [...prev, ...droppedLetters]);
       setDroppedLetters([]);
       setCurrentWord('');
+      localStorage.removeItem('formedText');
       setFeedback(null);
     } else if (operator === '=') {
-      const target = activity ? activity.items.join('').toUpperCase() : 'CASA';  // Fallback
+      const target = activity ? activity.items.join('').toUpperCase() : 'CASA';
       if (currentWord.toUpperCase() === target) {
         setFeedback({ message: 'Parabéns! Você acertou!', isCorrect: true });
         playSound('success');
-        saveProgress(100, `Palavra formada: ${currentWord}`);  // Inclui submissão para validação
+        saveProgress(100, `Palavra formada: ${currentWord}`);
+        localStorage.setItem('formedText', currentWord);
       } else {
         setFeedback({ message: `Tente novamente. A palavra correta é ${target}`, isCorrect: false });
         playSound('error');
@@ -232,6 +256,7 @@ const SyllableFormationActivity = () => {
     setDroppedLetters([]);
     setCurrentWord('');
     setFeedback(null);
+    localStorage.removeItem('formedText');
   };
 
   const handleStyleChange = (style) => {
@@ -241,7 +266,7 @@ const SyllableFormationActivity = () => {
 
   useEffect(() => {
     fetchActivity();
-  }, []);
+  }, [activityId]);
 
   if (loading) {
     return <LoadingMessage>Carregando atividade...</LoadingMessage>;
