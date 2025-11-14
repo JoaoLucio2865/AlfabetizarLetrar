@@ -4,7 +4,7 @@ import LoginPage from './pages/Auth/LoginPage';
 import RegisterPage from './pages/Auth/RegisterPage';
 import StudentDashboard from './pages/Dashboard/StudentDashboard';
 import AdminDashboard from './pages/Dashboard/AdminDashboard';
-import CreateActivityPage from './pages/Admin/CreateActivityPage';  // ← Novo
+import CreateActivityPage from './pages/Admin/CreateActivityPage';
 import SyllableFormationActivity from './pages/Activities/SyllableFormationActivity';
 import StudentProgressPage from './pages/Progress/StudentProgressPage';
 import AlphabetExplorer from './pages/Activities/AlphabetExplorer';
@@ -44,7 +44,18 @@ function App() {
           path="/dashboard"
           element={userRole === 'student' ? <StudentDashboard /> : <AdminDashboard />}
         />
-        <Route path="/create-activity" element={userRole === 'admin' ? <CreateActivityPage /> : <Navigate to="/dashboard" />} />  // ← Novo: Protegido
+        <Route
+          path="/student-dashboard"
+          element={userRole === 'student' ? <StudentDashboard /> : <Navigate to="/dashboard" />}
+        />
+        <Route
+          path="/admin-dashboard"
+          element={userRole === 'admin' ? <AdminDashboard /> : <Navigate to="/dashboard" />}
+        />
+        <Route
+          path="/create-activity"
+          element={userRole === 'admin' ? <CreateActivityPage /> : <Navigate to="/dashboard" />}
+        />
         <Route path="/activity/syllable-formation" element={<SyllableFormationActivity />} />
         <Route path="/activity/alphabet-explorer" element={<AlphabetExplorer />} />
         <Route path="/progress" element={<StudentProgressPage />} />
