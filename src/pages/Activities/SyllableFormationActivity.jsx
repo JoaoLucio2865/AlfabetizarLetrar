@@ -185,10 +185,10 @@ const SyllableFormationActivity = () => {
     }
   };
 
-  // Salvar progresso no backend
-  const saveProgress = async (score) => {
+  // Salvar progresso no backend (agora com submissão)
+  const saveProgress = async (score, submission = '') => {
     try {
-      await api.post('/progress', { activity_id: activity.id, score });
+      await api.post('/progress', { activity_id: activity.id, score, submission });
       speak('Progresso salvo.');
     } catch (err) {
       console.error('Erro ao salvar progresso:', err);
@@ -218,7 +218,7 @@ const SyllableFormationActivity = () => {
       if (currentWord.toUpperCase() === target) {
         setFeedback({ message: 'Parabéns! Você acertou!', isCorrect: true });
         playSound('success');
-        saveProgress(100);  // Salva progresso
+        saveProgress(100, `Palavra formada: ${currentWord}`);  // Inclui submissão para validação
       } else {
         setFeedback({ message: `Tente novamente. A palavra correta é ${target}`, isCorrect: false });
         playSound('error');

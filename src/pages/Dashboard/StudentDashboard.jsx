@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';  // Import do context
 import ProgressOverview from '../../components/dashboard/ProgressOverview';
 import ActivityList from '../../components/dashboard/ActivityList';
+import Button from '../../components/common/Button';  // Novo: Import do Button
 import api from '../../services/api';  // Novo: Import da API
 
 // Função auxiliar para síntese de voz
@@ -106,6 +107,24 @@ const ReloadButton = styled.button`
   }
 `;
 
+const Select = styled.select`
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+`;
+
+const Textarea = styled.textarea`
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 1rem;
+  min-height: 100px;
+  margin-bottom: 1rem;
+`;
+
 const StudentDashboard = () => {
   const { user } = useAuth();
   const studentName = user?.name || 'Aluno';
@@ -113,6 +132,8 @@ const StudentDashboard = () => {
   const [progressData, setProgressData] = useState({ syllables: 0, words: 0, phrases: 0 });
   const [recentActivities, setRecentActivities] = useState([]);
   const [availableActivities, setAvailableActivities] = useState([]);  // Novo: Atividades disponíveis
+  const [submission, setSubmission] = useState('');  // Novo: Para submissão
+  const [selectedActivityId, setSelectedActivityId] = useState('');  // Novo: Para selecionar atividade
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -176,6 +197,25 @@ const StudentDashboard = () => {
     }
   };
 
+  // Novo: Função para submeter para correção
+  const submitForReview = async () => {
+    if (!selectedActivityId || !submission.trim()) {
+      alert('Selecione uma atividade e descreva o que fez.');
+      return;
+    }
+    try {
+      await api.post('/progress', { activity_id: selectedActivityId, score: 0, submission });
+      alert('Submetido para correção!');
+      speak('Submissão enviada para o professor.');
+      setSubmission('');  // Limpa o campo
+      setSelectedActivityId('');  // Limpa seleção
+      fetchDashboardData();  // Recarrega dados
+    } catch (err) {
+      alert('Erro ao submeter.');
+      speak('Erro ao submeter.');
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchDashboardData();
@@ -230,6 +270,24 @@ const StudentDashboard = () => {
         ) : (
           <p>Nenhuma atividade disponível. Peça ao administrador para criar uma.</p>
         )}
+      </Section>
+
+      {/* Novo: Seção para submeter para correção */}
+      <Section>
+        <SectionTitle>Submeter para Correção</SectionTitle>
+        <p>Selecione uma atividade e descreva o que fez para o professor corrigir.</p>
+        <Select value={selectedActivityId} onChange={(e) => setSelectedActivityId(e.target.value)}>
+          <option value="">Selecione uma atividade</option>
+          {availableActivities.map(activity => (
+            <option key={activity.id} value={activity.id}>{activity.title}</option>
+          ))}
+        </Select>
+        <Textarea
+          placeholder="Descreva o que fez..."
+          value={submission}
+          onChange={(e) => setSubmission(e.target.value)}
+        />
+        <Button onClick={submitForReview}>Submeter</Button>
       </Section>
 
       <CallToAction>

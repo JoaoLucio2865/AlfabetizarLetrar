@@ -106,6 +106,8 @@ const AdminDashboard = () => {
     totalStudents: 0,
     totalActivities: 0,
     pendingReviews: 0,
+    activities: [],  // Lista de atividades criadas
+    pendingProgress: [],  // Progresso pendente para validação
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -114,20 +116,23 @@ const AdminDashboard = () => {
     setLoading(true);
     setError(null);
     try {
-      const [usersRes, activitiesRes, progressRes] = await Promise.all([
+      const [usersRes, activitiesRes, progressRes, pendingRes] = await Promise.all([
         api.get('/users'),
         api.get('/activities'),
         api.get('/progress'),
+        api.get('/progress/pending'),  // Novo: Busca progresso pendente
       ]);
 
       const totalStudents = usersRes.data.filter(u => u.role === 'student').length;
       const totalActivities = activitiesRes.data.length;
-      const pendingReviews = progressRes.data.filter(p => !p.completed_at).length;  // Atividades sem conclusão
+      const pendingReviews = progressRes.data.filter(p => !p.completed_at).length;
 
       setAdminStats({
         totalStudents,
         totalActivities,
         pendingReviews,
+        activities: activitiesRes.data,  // Armazena atividades
+        pendingProgress: pendingRes.data,  // Armazena progresso pendente
       });
 
       speak(`Painel carregado com sucesso. Total de alunos: ${totalStudents}.`);  // Feedback de voz
@@ -137,6 +142,19 @@ const AdminDashboard = () => {
       speak('Erro ao carregar painel. Tente recarregar.');  // Feedback auditivo
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Função para validar progresso (dentro do componente)
+  const validateProgress = async (id, status) => {
+    try {
+      await api.patch(`/progress/${id}/validate`, { status });
+      alert('Progresso validado!');
+      speak('Progresso validado com sucesso.');  // Feedback de voz
+      fetchAdminData();  // Recarrega dados
+    } catch (err) {
+      alert('Erro ao validar.');
+      speak('Erro ao validar progresso.');  // Feedback auditivo
     }
   };
 
@@ -170,6 +188,31 @@ const AdminDashboard = () => {
         <p><strong>Total de Alunos:</strong> {adminStats.totalStudents}</p>
         <p><strong>Total de Atividades Criadas:</strong> {adminStats.totalActivities}</p>
         <p><strong>Atividades Pendentes:</strong> {adminStats.pendingReviews}</p>
+      </Section>
+
+      {/* Nova seção: Atividades Criadas */}
+      <Section>
+        <SectionTitle>Atividades Criadas</SectionTitle>
+        <ul>
+          {adminStats.activities?.map(activity => (
+            <li key={activity.id}>{activity.title} - Tipo: {activity.type}</li>
+          ))}
+        </ul>
+      </Section>
+
+      {/* Nova seção: Acompanhamento de Alunos */}
+      <Section>
+        <SectionTitle>Acompanhamento de Alunos</SectionTitle>
+        <p>Progresso pendente para validação:</p>
+        <ul>
+          {adminStats.pendingProgress?.map(progress => (
+            <li key={progress.id}>
+              Aluno: {progress.user.name} - Atividade: {progress.activity.title} - Status: {progress.status}
+              <button onClick={() => validateProgress(progress.id, 'approved')}>Aprovar</button>
+              <button onClick={() => validateProgress(progress.id, 'rejected')}>Rejeitar</button>
+            </li>
+          ))}
+        </ul>
       </Section>
 
       <Section>
