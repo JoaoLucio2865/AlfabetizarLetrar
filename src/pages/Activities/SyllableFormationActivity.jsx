@@ -158,7 +158,6 @@ const SyllableFormationActivity = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Função para reproduzir som
   const playSound = (type) => {
     let sound;
     if (type === 'success') {
@@ -169,7 +168,6 @@ const SyllableFormationActivity = () => {
     if (sound) sound.play();
   };
 
-  // Buscar atividade do backend (ajustado para ID específico ou primeira de sílabas)
   const fetchActivity = async () => {
     setLoading(true);
     setError(null);
@@ -205,7 +203,6 @@ const SyllableFormationActivity = () => {
     }
   };
 
-  // Salvar progresso no backend
   const saveProgress = async (score, submission = '') => {
     try {
       await api.post('/progress', { activity_id: activity.id, score, submission });
@@ -228,26 +225,26 @@ const SyllableFormationActivity = () => {
       const formedWord = droppedLetters.join('');
       setCurrentWord(formedWord);
       speak(formedWord);
-      localStorage.setItem('formedText', formedWord);
       setFeedback(null);
     } else if (operator === '-') {
       setAvailableLetters((prev) => [...prev, ...droppedLetters]);
       setDroppedLetters([]);
       setCurrentWord('');
-      localStorage.removeItem('formedText');
       setFeedback(null);
     } else if (operator === '=') {
       const target = activity ? activity.items.join('').toUpperCase() : 'CASA';
-      if (currentWord.toUpperCase() === target) {
-        setFeedback({ message: 'Parabéns! Você acertou!', isCorrect: true });
-        playSound('success');
-        saveProgress(100, `Palavra formada: ${currentWord}`);
-        localStorage.setItem('formedText', currentWord);
-      } else {
-        setFeedback({ message: `Tente novamente. A palavra correta é ${target}`, isCorrect: false });
-        playSound('error');
-        speak(target);
-      }
+      if (operator === '=') {
+        const target = activity ? activity.items.join('').toUpperCase() : 'CASA';
+        if (currentWord.toUpperCase() === target) {
+          setFeedback({ message: 'Parabéns! Você acertou!', isCorrect: true });
+          playSound('success');
+          saveProgress(100);
+        } else {
+          setFeedback({ message: `Tente novamente. A palavra correta é ${target}`, isCorrect: false });
+          playSound('error');
+          speak(target);
+        }
+      }      
     }
   };
 
