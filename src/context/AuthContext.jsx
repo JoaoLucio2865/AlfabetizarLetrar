@@ -6,30 +6,31 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);  // Novo: Estado de loading
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const isAuthenticated = !!user;  // Novo: Derivado de user
+  const isAuthenticated = !!user;
 
-  const login = async (name, password = null) => {
+  const login = async (credentials) => {
+    const { name, password } = credentials;  // Desestrutura o objeto
     try {
+      // Envia apenas { name: string, password: string|null }
       const response = await api.post('/login', { name, password });
       const { user: userData, token } = response.data;
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
 
-      // Redirecionar baseado no role
       if (userData.role === 'admin') {
-        navigate('/admin-dashboard');  // Ajuste se usar /dashboard unificado
+        navigate('/admin-dashboard');
       } else {
-        navigate('/student-dashboard');  // Ajuste se usar /dashboard unificado
+        navigate('/student-dashboard');
       }
 
       return userData;
     } catch (error) {
       console.error('Erro no login:', error);
-      throw error;  // Lança erro para ser capturado no componente
+      throw error;
     }
   };
 
@@ -46,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     if (token && storedUser) {
       setUser(JSON.parse(storedUser));
     }
-    setLoading(false);  // Finaliza loading após verificação
+    setLoading(false);
   }, []);
 
   return (

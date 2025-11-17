@@ -76,7 +76,6 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Envia objeto { name, password }
       await login({ name, password: showPassword ? password : '' });
       navigate('/dashboard');
     } catch (err) {
