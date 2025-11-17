@@ -46,45 +46,39 @@ const Button = styled.button`
 `;
 
 const LoginPage = () => {
-  const [name, setName] = useState('');  // Novo: Campo para nome
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);  // Para mostrar campo senha apenas para admin
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  // Função para verificar role ao digitar nome
   const checkRole = async (name) => {
     if (!name) return;
     try {
-      const response = await api.get(`/users/check-role?name=${name}`);  // Busca por name
+      const response = await api.get(`/users/check-role?name=${name}`);
       if (response.data.role === 'admin') {
-        setShowPassword(true);  // Mostra campo senha para admin
+        setShowPassword(true);
       } else {
-        setShowPassword(false);  // Esconde para alunos
+        setShowPassword(false);
       }
     } catch (err) {
-      setShowPassword(false);  // Fallback: trata como aluno
+      setShowPassword(false);
     }
   };
 
   const handleNameChange = (e) => {
     setName(e.target.value);
-    checkRole(e.target.value);  // Verifica role ao digitar
+    checkRole(e.target.value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (showPassword) {
-        // Login com senha para admin
-        await login({ name, password });  // Ajuste AuthContext para usar name
-      } else {
-        // Login direto para alunos (sem senha)
-        await login({ name, password: '' });  // Ajuste no AuthContext se necessário
-      }
-      navigate('/dashboard');  // Redireciona para dashboard
+      // Envia objeto { name, password }
+      await login({ name, password: showPassword ? password : '' });
+      navigate('/dashboard');
     } catch (err) {
       alert('Erro no login. Verifique credenciais.');
     } finally {
