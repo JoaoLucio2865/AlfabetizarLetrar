@@ -264,7 +264,7 @@ const StudentDashboard = () => {
                 <strong>{activity.title}</strong> - Nível: {activity.level} - Tipo: {activity.type}
               </div>
               <ActivityLink
-                to={getActivityLink(activity.type)}
+                to={`${getActivityLink(activity.type)}?id=${activity.id}`}
                 onClick={() => speak(`Iniciando atividade: ${activity.title}`)}
               >
                 Praticar

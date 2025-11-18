@@ -8,6 +8,8 @@ import CreateActivityPage from './pages/Admin/CreateActivityPage';
 import SyllableFormationActivity from './pages/Activities/SyllableFormationActivity';
 import StudentProgressPage from './pages/Progress/StudentProgressPage';
 import AlphabetExplorer from './pages/Activities/AlphabetExplorer';
+import WordReading from './pages/Activities/WordReading';
+import PhraseFormation from './pages/Activities/PhraseFormation';
 import Header from './components/common/Header';
 import { useAuth } from './context/AuthContext';
 
@@ -58,6 +60,8 @@ function App() {
         />
         <Route path="/activity/syllable-formation" element={<SyllableFormationActivity />} />
         <Route path="/activity/alphabet-explorer" element={<AlphabetExplorer />} />
+        <Route path="/activity/word-reading" element={<WordReading />} />
+        <Route path="/activity/phrase-formation" element={<PhraseFormation />} />
         <Route path="/progress" element={<StudentProgressPage />} />
         <Route path="/" element={<Navigate to="/dashboard" />} />
         <Route path="*" element={<NotFound />} />

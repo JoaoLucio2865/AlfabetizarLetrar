@@ -142,14 +142,14 @@ const ReloadButton = styled.button`
   }
 `;
 
-const SyllableFormationActivity = () => {
+const PhraseFormation = () => {
   const [searchParams] = useSearchParams();
   const activityId = searchParams.get('id');
 
   const [activity, setActivity] = useState(null);
   const [availableLetters, setAvailableLetters] = useState([]);
   const [droppedLetters, setDroppedLetters] = useState([]);
-  const [currentWord, setCurrentWord] = useState('');
+  const [currentPhrase, setCurrentPhrase] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [letterStyle, setLetterStyle] = useState('uppercase');
   const [loading, setLoading] = useState(true);
@@ -173,25 +173,25 @@ const SyllableFormationActivity = () => {
       if (activityId) {
         response = await api.get(`/activities/${activityId}`);
         const activityData = response.data;
-        if (activityData) {
+        if (activityData && activityData.type === 'phrases') {
           setActivity(activityData);
-          // Para sílabas ou palavras, separe as letras
-          const letters = activityData.type === 'words' ? activityData.items[0].split('') : activityData.items;
-          setAvailableLetters(letters);
+          // Para frases, separe as letras da frase alvo
+          const targetPhrase = activityData.items[0];  // Ex.: 'O GATO É BONITO'
+          setAvailableLetters(targetPhrase.split('').filter(char => char !== ' '));  // Remove espaços
           speak(`Atividade carregada: ${activityData.title}`);
         } else {
-          setError('Atividade não encontrada.');
+          setError('Atividade não encontrada ou não é de frases.');
         }
       } else {
-        // Busca primeira atividade de sílabas ou palavras
-        response = await api.get('/activities?type=syllables');
+        response = await api.get('/activities?type=phrases');
         const activityData = response.data[0];
         if (activityData) {
           setActivity(activityData);
-          setAvailableLetters(activityData.items);
+          const targetPhrase = activityData.items[0];
+          setAvailableLetters(targetPhrase.split('').filter(char => char !== ' '));
           speak(`Atividade carregada: ${activityData.title}`);
         } else {
-          setError('Nenhuma atividade encontrada.');
+          setError('Nenhuma atividade de frases encontrada.');
         }
       }
     } catch (err) {
@@ -212,50 +212,43 @@ const SyllableFormationActivity = () => {
     }
   };
 
-  
   const handleDropLetter = (letter) => {
-    console.log('Dropping letter:', letter, 'Available before:', availableLetters);
     if (!droppedLetters.includes(letter)) {
       setDroppedLetters((prev) => [...prev, letter]);
-      setAvailableLetters((prev) => {
-        const newList = prev.filter((l) => l !== letter);
-        console.log('Available after:', newList);
-        return newList;
-      });
+      setAvailableLetters((prev) => prev.filter((l) => l !== letter));
     }
   };
 
-
   const handleOperatorClick = (operator) => {
     if (operator === '+') {
-      const formedWord = droppedLetters.join('');
-      setCurrentWord(formedWord);
-      speak(formedWord);
+      const formedPhrase = droppedLetters.join('');
+      setCurrentPhrase(formedPhrase);
+      speak(formedPhrase);
       setFeedback(null);
     } else if (operator === '-') {
       setAvailableLetters((prev) => [...prev, ...droppedLetters]);
       setDroppedLetters([]);
-      setCurrentWord('');
+      setCurrentPhrase('');
       setFeedback(null);
     } else if (operator === '=') {
-      const target = activity ? (activity.type === 'words' ? activity.items[0] : activity.items.join('')).toUpperCase() : 'CASA';
-      if (currentWord.toUpperCase() === target) {
-        setFeedback({ message: 'Parabéns! Você acertou!', isCorrect: true });
+      const target = activity ? activity.items[0].replace(/\s/g, '').toUpperCase() : 'OGATOEBONITO';
+      if (currentPhrase.toUpperCase() === target) {
+        setFeedback({ message: 'Parabéns! Você formou a frase corretamente!', isCorrect: true });
         playSound('success');
         saveProgress(100);
       } else {
-        setFeedback({ message: `Tente novamente. A palavra correta é ${target}`, isCorrect: false });
+        setFeedback({ message: `Tente novamente. A frase correta é ${activity.items[0]}`, isCorrect: false });
         playSound('error');
-        speak(target);
+        speak(activity.items[0]);
       }
     }
   };
 
   const handleReset = () => {
-    const letters = activity ? (activity.type === 'words' ? activity.items[0].split('') : activity.items) : ['C', 'A', 'S', 'A'];
+    const letters = activity ? activity.items[0].split('').filter(char => char !== ' ') : ['O', 'G', 'A', 'T', 'O', 'E', 'B', 'O', 'N', 'I', 'T', 'O'];
     setAvailableLetters(letters);
     setDroppedLetters([]);
-    setCurrentWord('');
+    setCurrentPhrase('');
     setFeedback(null);
   };
 
@@ -285,7 +278,7 @@ const SyllableFormationActivity = () => {
     <DndProvider backend={HTML5Backend}>
       <ActivityContainer>
         <ActivityBox>
-          <Instruction>Arraste as letras para formar a palavra e use os operadores!</Instruction>
+          <Instruction>Arraste as letras para formar a frase e use os operadores!</Instruction>
 
           <StyleButtons>
             <StyleButton onClick={() => handleStyleChange('uppercase')}>Maiúsculas</StyleButton>
@@ -308,7 +301,7 @@ const SyllableFormationActivity = () => {
 
           <EnhancedDropTargetArea onDropLetter={handleDropLetter} letterStyle={letterStyle}>
             <WordDisplay
-              word={currentWord || droppedLetters.join('')}
+              word={currentPhrase || droppedLetters.join('')}
               style={{
                 textTransform: letterStyle === 'uppercase' ? 'uppercase' : letterStyle === 'lowercase' ? 'lowercase' : 'none',
                 fontStyle: letterStyle === 'italic' ? 'italic' : 'normal',
@@ -337,4 +330,4 @@ const SyllableFormationActivity = () => {
   );
 };
 
-export default SyllableFormationActivity;
+export default PhraseFormation;
